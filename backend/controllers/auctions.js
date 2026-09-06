@@ -142,7 +142,8 @@ async function editAuction(req, res) {
 
   // Only update askingPrice if no bids are placed
   if (
-    !auction.highestBidder && askingPrice &&
+    !auction.highestBidder &&
+    askingPrice &&
     auction.currentPrice === auction.askingPrice
   ) {
     allowedUpdates.askingPrice = askingPrice;
@@ -173,11 +174,27 @@ async function deleteAuction(req, res) {
 
   const auction = await Auction.findOneAndDelete({
     _id: auctionId,
+    status: "closed",
     createdBy: userId,
   });
 
   if (!auction) {
-    throw createError(StatusCodes.NOT_FOUND, `No auction with id ${auctionId}`);
+    const existing = await Auction.findOne({
+      _id: auctionId,
+      createdBy: userId,
+    });
+
+    if (!existing) {
+      throw createError(
+        StatusCodes.NOT_FOUND,
+        `No auction with id ${auctionId}`,
+      );
+    }
+
+    throw createError(
+      StatusCodes.BAD_REQUEST,
+      `Cannot delete an active auction`,
+    );
   }
 
   res.status(StatusCodes.OK).json({ msg: "Deleted!" });

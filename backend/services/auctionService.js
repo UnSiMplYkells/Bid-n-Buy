@@ -1,6 +1,4 @@
-const Auction = require("../models/Auction");
 const Bid = require("../models/Bid");
-const User = require("../models/User")
 
 async function getLatestBids(auctionIds) {
   if (!auctionIds || auctionIds.length === 0) return [];
