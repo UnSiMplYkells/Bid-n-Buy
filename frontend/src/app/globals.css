@@ -1,0 +1,82 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fdfcfb;
+  --foreground: #221c1a;
+  --font-poppins: "Poppins", sans-serif;
+}
+
+.dark {
+  --background: #110e0c;
+  --foreground: #f7f5f4;
+}
+
+@theme {
+  /* Brand Teal Color Palette */
+  --color-brand-teal-50: #f0fdfa;
+  --color-brand-teal-100: #ccfbf1;
+  --color-brand-teal-200: #99f6e4;
+  --color-brand-teal-300: #5eead4;
+  --color-brand-teal-400: #2dd4bf;
+  --color-brand-teal-500: #14b8a6;
+  --color-brand-teal-600: #0d9488;
+  --color-brand-teal-700: #0f766e;
+  --color-brand-teal-800: #115e59;
+  --color-brand-teal-900: #134e4a;
+
+  /* Brand Brown Color Palette */
+  --color-brand-brown-50: #fdf8f6;
+  --color-brand-brown-100: #f2e8e5;
+  --color-brand-brown-200: #e0cfca;
+  --color-brand-brown-300: #c2ada7;
+  --color-brand-brown-400: #9e847c;
+  --color-brand-brown-500: #7f6259;
+  --color-brand-brown-600: #6d4c43;
+  --color-brand-brown-700: #5c3d34;
+  --color-brand-brown-800: #4d3129;
+  --color-brand-brown-900: #2b1c18;
+
+  /* Overwrite the default sans font with Poppins */
+  --font-sans: var(--font-poppins), system-ui, -apple-system, sans-serif;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Glassmorphism custom classes */
+.glass {
+  background: rgba(253, 252, 251, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(109, 76, 67, 0.1);
+}
+
+.dark .glass {
+  background: rgba(17, 14, 12, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(158, 132, 124, 0.1);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-brand-brown-300);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-brown-400);
+}

@@ -45,13 +45,16 @@ app.use(express.json());
 app.use(helmet());
 app.use(xss());
 
-const allowedOrigin = process.env.FRONTEND_URL || "*";
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  process.env.FRONTEND_URL,
+].filter(Boolean);
 
 app.use(
   cors({
-    origin: allowedOrigin,
-    methods: ["GET", "POST", "PATCH", "DELETE"],
-    credentials: true, // if using cookies
+    origin: allowedOrigins,
+    credentials: true,
   }),
 );
 
@@ -77,8 +80,8 @@ app.use("/api/v1/user", authenticateUser, userRouter);
 app.use("/api/v1/auction", authenticateUser, auctionRouter);
 app.use("/api/v1/bid", bidLimiter, authenticateUser, bidRouter);
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the Auction API");
+app.get("/health", (req, res) => {
+  res.json({ msg: healthy });
 });
 
 app.use(notFoundMiddleware);
@@ -96,7 +99,7 @@ async function start() {
 
     const io = socketIO(server, {
       cors: {
-        origin: allowedOrigin,
+        origin: allowedOrigins,
         methods: ["GET", "POST"],
         credentials: true,
       },
