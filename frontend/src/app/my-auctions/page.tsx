@@ -28,6 +28,7 @@ export default function MyAuctionsPage() {
 
   // Redirect if unauthenticated
   useEffect(() => {
+    document.title = "Bid'n'Buy | My Listings";
     if (!accessToken) {
       router.push("/login");
     }

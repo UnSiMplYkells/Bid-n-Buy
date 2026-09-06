@@ -22,6 +22,7 @@ export default function CreateAuctionPage() {
 
   // Redirect if unauthenticated
   useEffect(() => {
+    document.title = "Bid'n'Buy | List New Item";
     if (!accessToken) {
       router.push("/login");
     }

@@ -42,6 +42,7 @@ export default function ProfilePage() {
 
   // Redirect if unauthenticated
   useEffect(() => {
+    document.title = "Bid'n'Buy | Profile";
     if (!accessToken) {
       router.push("/login");
     }

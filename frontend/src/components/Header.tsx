@@ -36,9 +36,13 @@ export default function Header() {
     <header className="sticky top-0 z-50 w-full px-4 py-3">
       <div className="mx-auto max-w-7xl glass rounded-2xl px-6 py-3 flex items-center justify-between transition-all shadow-md">
         {/* Brand Logo */}
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="w-8 h-8 rounded-lg bg-brand-teal-600 flex items-center justify-center text-white font-bold text-lg shadow-sm transition-transform group-hover:scale-105">
-            B
+        <Link href="/" className="flex items-center gap-2 group select-none">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden shadow-sm transition-transform group-hover:scale-105">
+            <img
+              src="/bidnbuy.png"
+              alt="Bid'n'Buy Icon"
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className="text-xl font-bold tracking-tight text-brand-teal-700 dark:text-brand-teal-400">
             Bid <span className="text-brand-brown-600 dark:text-brand-brown-300">'N</span> Buy

@@ -45,6 +45,10 @@ export default function HomeHubPage() {
   useSocket();
 
   useEffect(() => {
+    document.title = "Bid'n'Buy | Live Auctions";
+  }, []);
+
+  useEffect(() => {
     const handler = setTimeout(() => {
       setDebouncedSearch(search);
       setPage(1);
