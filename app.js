@@ -20,6 +20,16 @@ const userRouter = require("./routes/users");
 const auctionRouter = require("./routes/auction");
 const bidRouter = require("./routes/bids");
 
+const path = require("path");
+const fs = require("fs");
+const yaml = require("js-yaml");
+const swaggerUI = require("swagger-ui-express");
+
+// Load Swagger YAML file
+const swaggerDocument = yaml.load(
+  fs.readFileSync(path.join(__dirname, "swagger.yaml"), "utf8"),
+);
+
 // error handler
 const notFoundMiddleware = require("./middleware/not-found");
 const errorHandlerMiddleware = require("./middleware/error-handler");
@@ -33,18 +43,19 @@ app.use(
 );
 app.use(express.json());
 app.use(helmet());
-app.use(cors());
 app.use(xss());
 
-// app.use(
-//   cors({
-//     origin: "https://yourfrontend.com",
-//     methods: ["GET", "POST", "PATCH", "DELETE"],
-//     credentials: true, // if using cookies
-//   }),
-// );
+const allowedOrigin = process.env.FRONTEND_URL || "*";
 
-//  auth limiter
+app.use(
+  cors({
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PATCH", "DELETE"],
+    credentials: true, // if using cookies
+  }),
+);
+
+// auth limiter
 const authLimiter = rateLimiter({
   windowMs: 10 * 60 * 1000,
   max: 5,
@@ -56,6 +67,9 @@ const bidLimiter = rateLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 10,
 });
+
+// Swagger Documentation Route
+app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerDocument));
 
 // routes
 app.use("/api/v1/auth", authLimiter, authRouter);
@@ -82,7 +96,7 @@ async function start() {
 
     const io = socketIO(server, {
       cors: {
-        origin: "*", // Replace with your frontend URL in production, e.g. "https://yourfrontend.com"
+        origin: allowedOrigin,
         methods: ["GET", "POST"],
         credentials: true,
       },

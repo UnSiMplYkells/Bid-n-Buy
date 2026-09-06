@@ -1,0 +1,696 @@
+openapi: 3.0.0
+info:
+  title: Real-Time Auction Platform API
+  version: 1.0.0
+  description: A secure, robust REST and WebSocket-enabled API for real-time auctions, live bidding, and automated scheduling.
+servers:
+  - url: http://localhost:3000
+    description: Local Development Server
+  - url: https://your-auction-api.onrender.com
+    description: Live Production Server (Render)
+paths:
+  /api/v1/auth/register:
+    post:
+      summary: Register a new user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  minimum: 6
+                  example: securepass123
+                username:
+                  type: string
+                  example: JohnDoe
+                phoneNumber:
+                  type: string
+                  example: "+1234567890"
+                image:
+                  type: string
+                  example: "https://example.com/avatar.jpg"
+      responses:
+        "201":
+          description: User created successfully. Sets refresh cookie and issues access token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User created successfully!"
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: john.doe@example.com
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Invalid input details or email already exists.
+
+  /api/v1/auth/login:
+    post:
+      summary: Log in an existing user
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john.doe@example.com
+                password:
+                  type: string
+                  example: securepass123
+      responses:
+        "200":
+          description: Login successful. Sets httpOnly refreshToken cookie and returns accessToken.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: refreshToken=abc...; Path=/; HttpOnly; SameSite=Strict
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Login successful!"
+                  user:
+                    type: object
+                    properties:
+                      email:
+                        type: string
+                        example: john.doe@example.com
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "400":
+          description: Email or password not provided.
+        "401":
+          description: Invalid login credentials.
+
+  /api/v1/auth/logout:
+    post:
+      summary: Log out current user
+      tags:
+        - Authentication
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Successfully logged out, clearing session refresh token and cookie.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Logged out successfully"
+        "401":
+          description: Authentication token missing or invalid.
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh active JWT access token
+      tags:
+        - Authentication
+      description: Rotates the refresh token and returns a new access token. Supports passing the token in HttpOnly cookies or request body.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refreshToken:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      responses:
+        "200":
+          description: Token refreshed successfully. Returns a new access token.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+        "401":
+          description: Refresh token missing, invalid, or expired.
+
+  /api/v1/user/me:
+    get:
+      summary: Retrieve complete user details
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      description: Retrieves the complete profile details of the logged-in user, including their active bids and closed auctions won.
+      responses:
+        "200":
+          description: User profile and bidding status retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User details retrieved successfully!"
+                  userProfile:
+                    type: object
+                    properties:
+                      _id:
+                        type: string
+                        example: "647bcf300ffea04c10a34b22"
+                      email:
+                        type: string
+                        example: john@example.com
+                      username:
+                        type: string
+                        example: JohnDoe
+                      image:
+                        type: string
+                        example: "https://example.com/avatar.jpg"
+                      phoneNumber:
+                        type: string
+                        example: "12345678"
+                  userCurrentBids:
+                    type: array
+                    items:
+                      type: object
+                  userWins:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          description: Unauthorized. Authentication missing or invalid.
+    post:
+      summary: Create or update user profile
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: NewUsername
+                image:
+                  type: string
+                  example: "https://example.com/new-avatar.jpg"
+                phoneNumber:
+                  type: string
+                  example: "987654321"
+      responses:
+        "201":
+          description: Profile updated successfully. Returns updated profile data.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User profile updated successfully!"
+                  profile:
+                    type: object
+        "401":
+          description: Unauthorized.
+
+  /api/v1/user/me/bids:
+    get:
+      summary: Get user's current active bids
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      description: Returns a list of active auctions that the user has currently placed bids on.
+      responses:
+        "200":
+          description: Active bids retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User current bids retrieved successfully!"
+                  userCurrentBids:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          description: Unauthorized.
+
+  /api/v1/user/me/wins:
+    get:
+      summary: Get auctions won by user
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      description: Returns a list of all closed auctions won by the current user.
+      responses:
+        "200":
+          description: Won auctions retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User won bids retrieved successfully!"
+                  userWins:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          description: Unauthorized.
+
+  /api/v1/auction/create:
+    post:
+      summary: Create a new auction
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - askingPrice
+                - desc
+                - endTime
+              properties:
+                name:
+                  type: string
+                  maxLength: 50
+                  example: "Vintage Leather Jacket"
+                askingPrice:
+                  type: number
+                  example: 120
+                desc:
+                  type: string
+                  example: "Authentic retro brown leather jacket from the late 1980s."
+                endTime:
+                  type: string
+                  format: date-time
+                  example: "2026-12-31T23:59:59.000Z"
+                image:
+                  type: string
+                  example: "https://example.com/vintage-jacket.jpg"
+      responses:
+        "201":
+          description: Auction listing created successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Auction created successfully!"
+                  auction:
+                    type: object
+        "400":
+          description: Validation failed or missing parameters.
+        "401":
+          description: Unauthorized.
+
+  /api/v1/auction/all:
+    get:
+      summary: Get all auctions
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      description: Retrieve all active and closed auctions across the platform. Supports name search, status filter, and pagination.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, closed]
+          description: Filter auctions by status
+        - in: query
+          name: name
+          schema:
+            type: string
+          description: Search query for auction name (case-insensitive regex match)
+        - in: query
+          name: page
+          schema:
+            type: integer
+            default: 1
+          description: Page number for pagination
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+          description: Items limit per page
+      responses:
+        "200":
+          description: List of auctions retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "All auctions retrieved successfully!"
+                  auctions:
+                    type: array
+                    items:
+                      type: object
+                  count:
+                    type: integer
+                    example: 1
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 10
+        "401":
+          description: Unauthorized.
+
+  /api/v1/auction/user/all:
+    get:
+      summary: Get logged-in user's auctions
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      description: Retrieve all active/closed auctions created specifically by the currently authenticated user.
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [active, closed]
+        - in: query
+          name: name
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User auctions retrieved successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "User auctions retrieved successfully!"
+                  auctions:
+                    type: array
+                    items:
+                      type: object
+                  count:
+                    type: integer
+                    example: 1
+        "401":
+          description: Unauthorized.
+
+  /api/v1/auction/{id}:
+    get:
+      summary: Retrieve single auction details
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The auction item ID
+      responses:
+        "200":
+          description: Auction item details retrieved successfully along with the latest bid.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Auction details retrieved successfully!"
+                  auction:
+                    type: object
+                  latestBid:
+                    type: object
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Auction with given ID not found.
+    patch:
+      summary: Edit auction details
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      description: Modify details of your created auction listing. Edits to the starting price (askingPrice) are strictly forbidden after any bids are placed. Cannot edit closed auctions.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                desc:
+                  type: string
+                image:
+                  type: string
+                askingPrice:
+                  type: number
+      responses:
+        "200":
+          description: Auction successfully updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Auction details updated successfully!"
+                  auction:
+                    type: object
+        "400":
+          description: Editing forbidden (closed auction or bids already placed).
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Auction not found or creator mismatch.
+    delete:
+      summary: Delete an auction
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Auction deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Deleted!"
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Auction not found or creator mismatch.
+
+  /api/v1/auction/{id}/close:
+    post:
+      summary: Manually close an active auction early
+      tags:
+        - Auctions
+      security:
+        - bearerAuth: []
+      description: Allows the creator of the auction to manually end and close an active auction early.
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Auction successfully closed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Auction closed successfully!"
+                  auction:
+                    type: object
+        "400":
+          description: Auction is already closed.
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Auction not found or creator mismatch.
+
+  /api/v1/bid/{auctionId}:
+    post:
+      summary: Place a bid on an active auction
+      tags:
+        - Bids
+      security:
+        - bearerAuth: []
+      description: Submit a new bid on an active auction. Supports custom `amount` or automatic percentage increment of current price using `bidType` (e.g. "10%"). All bidding actions utilize safe MongoDB transactions. Outbid notifications are pushed in real-time.
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+          description: The auction item ID to place a bid on
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                amount:
+                  type: number
+                  description: Explicit custom bid amount. Required if bidType is not provided.
+                  example: 150
+                bidType:
+                  type: string
+                  description: Percentage-based increment from current price (e.g. "5%", "10%", "20%").
+                  example: "10%"
+      responses:
+        "201":
+          description: Bid successfully placed. Price updated and real-time sockets notified.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Bid placed successfully!"
+                  bid:
+                    type: object
+                  auction:
+                    type: object
+        "400":
+          description: Bidding validation failed (e.g., bidding on own auction, bid price lower than current price, or closed auction).
+        "401":
+          description: Unauthorized.
+        "409":
+          description: Concurrency conflict (auction price changed simultaneously by another user, retry suggested).
+
+  /api/v1/bid/history/{auctionId}:
+    get:
+      summary: Retrieve bid history for an auction
+      tags:
+        - Bids
+      security:
+        - bearerAuth: []
+      description: Returns the full chronological history of bids placed on a specific auction listing. Bidders' usernames are safely masked for privacy (e.g., `Jo*****e`).
+      parameters:
+        - in: path
+          name: auctionId
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Bid history successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  msg:
+                    type: string
+                    example: "Auction bid history retrieved successfully!"
+                  bids:
+                    type: array
+                    items:
+                      type: object
+                  count:
+                    type: integer
+                    example: 2
+        "401":
+          description: Unauthorized.
+        "404":
+          description: Auction listing not found.
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter your JWT Access Token. Retrieve this from POST /api/v1/auth/register or POST /api/v1/auth/login.
