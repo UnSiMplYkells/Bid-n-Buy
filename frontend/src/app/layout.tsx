@@ -11,8 +11,11 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Bid 'N Buy | Live Auction Platform",
+  title: "Bid'n'Buy",
   description: "Secure, real-time online auctions, live bidding battles, and automated lifecycle closures.",
+  icons: {
+    icon: "/bidnbuy.png",
+  },
 };
 
 export default function RootLayout({

@@ -18,6 +18,7 @@ export default function LoginPage() {
 
   // Redirect if already logged in
   useEffect(() => {
+    document.title = "Bid'n'Buy | Sign In";
     if (accessToken) {
       router.push("/");
     }
@@ -64,8 +65,12 @@ export default function LoginPage() {
       >
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="mx-auto w-12 h-12 rounded-2xl bg-brand-teal-600 flex items-center justify-center text-white font-bold text-2xl shadow-md mb-3">
-            B
+          <div className="mx-auto w-12 h-12 rounded-2xl flex items-center justify-center overflow-hidden shadow-md mb-3">
+            <img
+              src="/bidnbuy.png"
+              alt="Bid'n'Buy Icon"
+              className="w-full h-full object-cover"
+            />
           </div>
           <h2 className="text-2xl font-bold text-brand-brown-800 dark:text-brand-brown-200">
             Welcome Back
