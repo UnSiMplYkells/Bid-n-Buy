@@ -85,14 +85,17 @@ export default function Header() {
           {/* User Details & Logout */}
           {user ? (
             <div className="flex items-center gap-4">
-              <div className="hidden lg:flex flex-col text-right">
-                <span className="text-xs text-brand-brown-400 dark:text-brand-brown-400">
+              <Link
+                href="/profile"
+                className="hidden lg:flex flex-col text-right hover:opacity-80 transition-opacity cursor-pointer"
+              >
+                <span className="text-xs text-brand-brown-600 dark:text-brand-brown-400 font-semibold">
                   Welcome,
                 </span>
                 <span className="text-sm font-bold text-brand-teal-600 dark:text-brand-teal-400">
                   {user.username || user.email.split("@")[0]}
                 </span>
-              </div>
+              </Link>
               <button
                 onClick={handleLogout}
                 className="w-10 h-10 rounded-xl bg-red-100 hover:bg-red-200 dark:bg-red-950/40 dark:hover:bg-red-900/30 flex items-center justify-center text-red-600 dark:text-red-400 text-lg transition-transform hover:scale-105 cursor-pointer"

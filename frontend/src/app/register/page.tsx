@@ -29,8 +29,8 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!email || !password || !username) {
-      return toast.error("Please enter email, password, and username");
+    if (!email || !password) {
+      return toast.error("Please enter email and password");
     }
 
     if (password.length < 6) {
@@ -40,7 +40,8 @@ export default function RegisterPage() {
     setLoading(true);
     const toastId = toast.loading("Creating your account...");
 
-    const payload: any = { email, password, username };
+    const payload: any = { email, password };
+    if (username) payload.username = username;
     if (phoneNumber) payload.phoneNumber = phoneNumber;
     if (image) payload.image = image;
 
@@ -88,14 +89,13 @@ export default function RegisterPage() {
           {/* Username Input */}
           <div className="relative">
             <label className="text-xs font-bold text-brand-brown-500 dark:text-brand-brown-400 mb-1 block">
-              Username *
+              Username (Optional)
             </label>
             <div className="absolute inset-y-9 left-4 flex items-center pointer-events-none text-brand-brown-400 dark:text-brand-brown-400">
               <FiUser />
             </div>
             <input
               type="text"
-              required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               placeholder="JohnDoe"
