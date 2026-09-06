@@ -5,7 +5,7 @@ import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "../store/useAuthStore";
 import toast from "react-hot-toast";
 
-const SOCKET_BASE_URL = "https://bid-n-buy.onrender.com";
+const SOCKET_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://bid-n-buy.onrender.com";
 
 export function useSocket(auctionId?: string) {
   const socketRef = useRef<Socket | null>(null);
@@ -17,7 +17,6 @@ export function useSocket(auctionId?: string) {
   useEffect(() => {
     // Initialize socket connection
     const socket = io(SOCKET_BASE_URL, {
-      transports: ["websocket"],
       withCredentials: true,
     });
 

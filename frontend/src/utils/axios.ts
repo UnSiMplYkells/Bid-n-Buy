@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useAuthStore } from "../store/useAuthStore";
 
-const API_BASE_URL = "https://bid-n-buy.onrender.com";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://bid-n-buy.onrender.com";
 
 export const axiosClient = axios.create({
   baseURL: API_BASE_URL,

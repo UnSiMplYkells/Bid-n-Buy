@@ -8,6 +8,8 @@ const express = require("express");
 const socketIO = require("socket.io");
 const app = express();
 
+app.set("trust proxy", 1);
+
 const helmet = require("helmet");
 const cors = require("cors");
 const xss = require("xss-clean");
@@ -81,7 +83,7 @@ app.use("/api/v1/auction", authenticateUser, auctionRouter);
 app.use("/api/v1/bid", bidLimiter, authenticateUser, bidRouter);
 
 app.get("/health", (req, res) => {
-  res.json({ msg: healthy });
+  res.json({ msg: "healthy" });
 });
 
 app.use(notFoundMiddleware);
