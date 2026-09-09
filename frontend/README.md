@@ -86,3 +86,21 @@ The application maintains a highly optimized custom hook inside `src/hooks/useSo
 * When viewing an individual listing, it automatically joins room `auction-${auctionId}`.
 * It listens for `"outbid"` events globally. If another user outbids you on any listing, a customized **Outbid Slide-over Toast Alert** pops up in real-time, encouraging you to re-bid and stay in the lead!
 * Inside `/auction/[id]/page.tsx`, it listens for `"newBid"` events to automatically invalidate React Query caches, instantly updating price widgets and bid history feeds across the screen for all viewers simultaneously.
+
+---
+
+## 📸 Image Upload & Profile Picture Suite
+
+Rather than manual image URL pasting, the client fully handles native file uploads integrated with Cloudinary:
+
+### 1. Create Auction Upload
+When publishing a new listing:
+- Users select an image file locally.
+- An instant cover preview is generated.
+- When published, the listing details are posted to `/api/v1/auction/create`, immediately followed by a multi-part `FormData` image upload to `/api/v1/auction/${auctionId}/images`.
+
+### 2. Interactive Profile Avatar Management
+On the `/profile` page, users can:
+- **Change Photo:** Hover over their avatar and select a local file to upload directly using multipart form-data.
+- **Remove Photo:** Easily revert their custom image to the system's default avatar (automatically deletes old resources from Cloudinary).
+- **Zustand Synchronization:** All updates immediately update the global store (`useAuthStore`) to ensure state is in sync across all components instantly.

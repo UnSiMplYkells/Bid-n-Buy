@@ -2,6 +2,7 @@ const Auction = require("../models/Auction");
 const { StatusCodes } = require("http-status-codes");
 const createError = require("http-errors");
 const { getLatestBids } = require("../services/auctionService");
+const cloudinary = require("../services/cloudinary");
 
 async function createAuction(req, res) {
   req.body.createdBy = req.user.userId;
@@ -155,7 +156,7 @@ async function editAuction(req, res) {
     auctionId,
     allowedUpdates,
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   );
@@ -226,7 +227,7 @@ async function closeAuction(req, res) {
     auctionId,
     { status: "closed" },
     {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     },
   );
@@ -237,6 +238,119 @@ async function closeAuction(req, res) {
   });
 }
 
+async function uploadImage(req, res) {
+  const {
+    user: { userId },
+    params: { id: auctionId },
+  } = req;
+
+  if (!req.file) {
+    throw createError(StatusCodes.BAD_REQUEST, "No image uploaded");
+  }
+
+  let cloudinaryResult;
+
+  try {
+    // Upload from RAM to Cloudinary
+    cloudinaryResult = await new Promise((resolve, reject) => {
+      const stream = cloudinary.uploader.upload_stream(
+        { folder: "auction_images" },
+        (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        },
+      );
+      stream.end(req.file.buffer);
+    });
+
+    // Update the Database
+    const auction = await Auction.findByIdAndUpdate(
+      { _id: auctionId, createdBy: userId, status: "active" },
+      { image: cloudinaryResult.secure_url },
+      { returnDocument: "after" },
+    );
+
+    if (!auction) {
+      throw createError(StatusCodes.NOT_FOUND, "Auction not found in database");
+    }
+
+    // Send Success Response
+    res.status(StatusCodes.OK).json({
+      msg: "Image uploaded successfully!",
+      auction,
+    });
+  } catch (error) {
+    if (cloudinaryResult && cloudinaryResult.public_id) {
+      cloudinary.uploader
+        .destroy(cloudinaryResult.public_id)
+        .catch(console.error);
+    }
+
+    throw error;
+  }
+}
+
+// for more than one image
+// async function uploadImages(req, res) {
+//   // 1. Validation: Check for files and enforce the minimum of 5
+//   if (!req.files || req.files.length < 5) {
+//     throw createError(
+//       StatusCodes.BAD_REQUEST,
+//       "Please upload at least 5 images",
+//     );
+//   }
+
+//   let cloudinaryResults = [];
+
+//   try {
+//     // 2. Map over the files and upload concurrently
+//     const uploadPromises = req.files.map((file) => {
+//       return new Promise((resolve, reject) => {
+//         const stream = cloudinary.uploader.upload_stream(
+//           { folder: "auction_images" },
+//           (error, result) => {
+//             if (error) return reject(error);
+//             resolve(result);
+//           },
+//         );
+//         stream.end(file.buffer);
+//       });
+//     });
+
+//     // Wait for all uploads to finish
+//     cloudinaryResults = await Promise.all(uploadPromises);
+
+//     // 3. Extract just the secure URLs for the database
+//     const imageUrls = cloudinaryResults.map((result) => result.secure_url);
+
+//     // 4. Update Database
+//     const auction = await Auction.findByIdAndUpdate(
+//       req.params.id,
+//       { images: imageUrls },
+//       { new: true, runValidators: true },
+//     );
+
+//     if (!auction) {
+//       throw createError(StatusCodes.NOT_FOUND, "Auction not found");
+//     }
+
+//     res.status(StatusCodes.OK).json({
+//       msg: "Images uploaded successfully!",
+//       auction,
+//     });
+//   } catch (error) {
+//     // 5. Multi-Image Rollback
+//     // If anything fails, destroy ALL images that made it to Cloudinary
+//     if (cloudinaryResults.length > 0) {
+//       const deletePromises = cloudinaryResults.map((result) =>
+//         cloudinary.uploader.destroy(result.public_id).catch(console.error),
+//       );
+//       await Promise.all(deletePromises);
+//     }
+//     throw error;
+//   }
+// }
+
 module.exports = {
   createAuction,
   getAllAuction,
@@ -245,4 +359,5 @@ module.exports = {
   editAuction,
   deleteAuction,
   closeAuction,
+  uploadImage,
 };

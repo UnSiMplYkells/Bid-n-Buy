@@ -109,6 +109,8 @@ All REST endpoints are prefixed with `/api/v1`.
 | **GET** | `/me` | Retrieves the complete user profile, current active bids, and won auctions. | Response: `{ "userProfile": {}, "userCurrentBids": [], "userWins": [] }` |
 | **GET** | `/me/bids` | Retrieves all active auctions the user currently has bids on. | Response: `{ "userCurrentBids": [...] }` |
 | **GET** | `/me/wins` | Retrieves a list of closed auctions won by this user. | Response: `{ "userWins": [...] }` |
+| **POST** | `/:id/images` | Uploads and updates the user's profile picture using Multer & Cloudinary. | Multipart Form: `{ "image": File }` |
+| **DELETE** | `/:id/images` | Deletes custom profile picture from Cloudinary and reverts back to the default avatar. | None |
 
 ---
 
@@ -124,6 +126,7 @@ All REST endpoints are prefixed with `/api/v1`.
 | **PATCH** | `/:id` | None | Edits auction details (only if active & no bids placed). | `{ "name": "New Name", "desc": "New description", "image": "New URL" }` |
 | **DELETE** | `/:id` | None | Deletes an auction created by the user. | Route param: `:id` |
 | **POST** | `/:id/close` | None | Manually closes an auction early (creator only). | Route param: `:id` |
+| **POST** | `/:id/images` | None | Uploads and updates the auction's cover image using Multer & Cloudinary. | Multipart Form: `{ "image": File }` |
 
 ---
 
