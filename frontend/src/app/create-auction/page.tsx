@@ -18,7 +18,8 @@ export default function CreateAuctionPage() {
   const [desc, setDesc] = useState("");
   const [askingPrice, setAskingPrice] = useState("");
   const [endTime, setEndTime] = useState("");
-  const [image, setImage] = useState("");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string>("");
 
   // Redirect if unauthenticated
   useEffect(() => {
@@ -34,19 +35,33 @@ export default function CreateAuctionPage() {
       desc: string;
       askingPrice: number;
       endTime: string;
-      image?: string;
     }) => {
+      // Step 1: Create the auction text details
       const response = await axiosClient.post("/api/v1/auction/create", payload);
+      const createdAuction = response.data.auction;
+
+      // Step 2: Upload the selected image if present
+      if (imageFile) {
+        const formData = new FormData();
+        formData.append("image", imageFile);
+
+        const uploadResponse = await axiosClient.post(
+          `/api/v1/auction/${createdAuction._id}/images`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+        return uploadResponse.data;
+      }
+
       return response.data;
     },
     onSuccess: () => {
-      toast.success("Auction item listed successfully! 🔥");
       queryClient.invalidateQueries({ queryKey: ["auctions"] });
       router.push("/");
-    },
-    onError: (error: any) => {
-      const errorMsg = error.response?.data?.msg || "Failed to create auction listing. Please check details.";
-      toast.error(errorMsg);
     },
   });
 
@@ -66,18 +81,26 @@ export default function CreateAuctionPage() {
       return toast.error("End time must be in the future");
     }
 
-    const payload: any = {
+    if (imageFile && imageFile.size > 5 * 1024 * 1024) {
+      return toast.error("Image file is too large! Maximum size allowed is 5MB.");
+    }
+
+    const payload = {
       name,
       desc,
       askingPrice: priceNum,
       endTime: new Date(endTime).toISOString(),
     };
 
-    if (image) {
-      payload.image = image;
-    }
-
-    mutation.mutate(payload);
+    // Bind mutation to toast.promise
+    toast.promise(
+      mutation.mutateAsync(payload),
+      {
+        loading: "Listing item and uploading image...",
+        success: "Auction item listed successfully! 🔥",
+        error: (err) => err.response?.data?.msg || "Failed to create auction listing.",
+      }
+    );
   };
 
   if (!accessToken) return null;
@@ -179,21 +202,60 @@ export default function CreateAuctionPage() {
             </div>
           </div>
 
-          {/* Image URL */}
-          <div className="relative">
-            <label className="text-xs font-bold text-brand-brown-500 dark:text-brand-brown-400 mb-1.5 block">
-              Image URL (Optional)
+          {/* Image File Selector */}
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-brand-brown-500 dark:text-brand-brown-400 block">
+              Item Image (Optional)
             </label>
-            <div className="absolute inset-y-11 left-4 flex items-center pointer-events-none text-brand-brown-400">
-              <FiImage />
+            <div className="flex flex-col items-center justify-center border-2 border-dashed border-brand-brown-200/40 dark:border-brand-brown-800/40 rounded-3xl p-6 bg-brand-brown-100/20 dark:bg-brand-brown-900/10 hover:border-brand-teal-500/50 transition-colors relative group">
+              {imagePreview ? (
+                <div className="relative w-full h-48 rounded-2xl overflow-hidden shadow-sm">
+                  <img
+                    src={imagePreview}
+                    alt="Selected Item Preview"
+                    className="w-full h-full object-cover"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImageFile(null);
+                      setImagePreview("");
+                    }}
+                    className="absolute top-3 right-3 bg-red-600/95 hover:bg-red-500 text-white py-1.5 px-3 rounded-xl text-xs font-bold shadow-md transition-colors cursor-pointer"
+                  >
+                    Remove
+                  </button>
+                </div>
+              ) : (
+                <label className="flex flex-col items-center justify-center w-full h-32 cursor-pointer">
+                  <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                    <FiImage className="w-10 h-10 text-brand-brown-400 mb-2 group-hover:text-brand-teal-500 transition-colors" />
+                    <p className="text-sm font-semibold text-brand-brown-600 dark:text-brand-brown-300">
+                      Click to upload cover image
+                    </p>
+                    <p className="text-xs text-brand-brown-400 mt-1">
+                      PNG, JPG, WEBP (Max 5MB)
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 5 * 1024 * 1024) {
+                          toast.error("File is too large! Maximum size allowed is 5MB.");
+                          return;
+                        }
+                        setImageFile(file);
+                        setImagePreview(URL.createObjectURL(file));
+                      }
+                    }}
+                  />
+                </label>
+              )}
             </div>
-            <input
-              type="url"
-              value={image}
-              onChange={(e) => setImage(e.target.value)}
-              placeholder="https://example.com/vintage-item.jpg"
-              className="w-full bg-brand-brown-100/40 hover:bg-brand-brown-100 dark:bg-brand-brown-900/20 dark:hover:bg-brand-brown-900/40 pl-11 pr-4 py-3 rounded-2xl border border-transparent focus:border-brand-teal-500 focus:bg-background outline-none text-sm transition-all font-semibold"
-            />
           </div>
 
           {/* Submit Button */}

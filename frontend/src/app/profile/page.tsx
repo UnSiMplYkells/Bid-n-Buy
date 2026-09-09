@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "../../store/useAuthStore";
 import { axiosClient } from "../../utils/axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUser, FiMail, FiPhone, FiImage, FiSettings, FiGrid, FiAward, FiDollarSign } from "react-icons/fi";
+import { FiUser, FiMail, FiPhone, FiSettings, FiGrid, FiAward, FiDollarSign, FiTrash2, FiUpload } from "react-icons/fi";
 import toast from "react-hot-toast";
 
 interface BidOnAuction {
@@ -33,10 +33,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { accessToken, user, updateUser } = useAuthStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [username, setUsername] = useState("");
   const [phoneNumber, setPhoneNumber] = useState("");
-  const [image, setImage] = useState("");
   const [activeTab, setActiveTab] = useState<"bids" | "wins">("bids");
   const [isEditing, setIsEditing] = useState(false);
 
@@ -53,7 +53,6 @@ export default function ProfilePage() {
     if (user) {
       setUsername(user.username || "");
       setPhoneNumber(user.phoneNumber || "");
-      setImage(user.image || "");
     }
   }, [user]);
 
@@ -67,9 +66,11 @@ export default function ProfilePage() {
     enabled: !!accessToken,
   });
 
+  const userProfile = data?.userProfile || user;
+
   // Profile update mutation
   const updateMutation = useMutation({
-    mutationFn: async (payload: { username: string; phoneNumber?: string; image?: string }) => {
+    mutationFn: async (payload: { username: string; phoneNumber?: string }) => {
       const response = await axiosClient.post("/api/v1/user/me", payload);
       return response.data;
     },
@@ -88,6 +89,40 @@ export default function ProfilePage() {
     },
   });
 
+  // Upload picture mutation
+  const uploadImageMutation = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("image", file);
+      const response = await axiosClient.post(
+        `/api/v1/user/${userProfile?._id}/images`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
+      return response.data;
+    },
+    onSuccess: (data) => {
+      updateUser(data.user);
+      queryClient.invalidateQueries({ queryKey: ["user-profile-data"] });
+    },
+  });
+
+  // Delete picture mutation
+  const deleteImageMutation = useMutation({
+    mutationFn: async () => {
+      const response = await axiosClient.delete(`/api/v1/user/${userProfile?._id}/images`);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      updateUser(data.user);
+      queryClient.invalidateQueries({ queryKey: ["user-profile-data"] });
+    },
+  });
+
   const handleUpdateProfile = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -97,14 +132,47 @@ export default function ProfilePage() {
 
     const payload: any = { username };
     if (phoneNumber) payload.phoneNumber = phoneNumber;
-    if (image) payload.image = image;
 
     updateMutation.mutate(payload);
   };
 
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        return toast.error("File is too large! Maximum size allowed is 5MB.");
+      }
+
+      const uploadPromise = uploadImageMutation.mutateAsync(file);
+
+      toast.promise(
+        uploadPromise,
+        {
+          loading: "Uploading profile picture...",
+          success: "Profile picture updated successfully!",
+          error: (err) => err.response?.data?.msg || "Failed to upload profile picture.",
+        }
+      );
+    }
+  };
+
+  const handleDeletePhotoClick = () => {
+    if (confirm("Are you sure you want to remove your profile picture?")) {
+      const deletePromise = deleteImageMutation.mutateAsync();
+
+      toast.promise(
+        deletePromise,
+        {
+          loading: "Removing profile picture...",
+          success: "Profile picture removed successfully!",
+          error: (err) => err.response?.data?.msg || "Failed to remove profile picture.",
+        }
+      );
+    }
+  };
+
   if (!accessToken) return null;
 
-  const userProfile = data?.userProfile || user;
   const currentBids: BidOnAuction[] = data?.userCurrentBids || [];
   const wonAuctions: WonAuction[] = data?.userWins || [];
 
@@ -113,12 +181,49 @@ export default function ProfilePage() {
       {/* Top Profile Card */}
       <div className="glass rounded-3xl p-6 md:p-8 border border-brand-brown-200/10 shadow-md flex flex-col md:flex-row gap-6 md:gap-8 items-center md:items-start">
         {/* Avatar */}
-        <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden bg-brand-brown-100 border-2 border-brand-teal-500/20 shadow-sm flex-shrink-0">
-          <img
-            src={userProfile?.image || "https://tse1.explicit.bing.net/th/id/OIP.nNcZCmS6bYcpZXN7AimcNwHaGI?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"}
-            alt="Profile Avatar"
-            className="w-full h-full object-cover"
-          />
+        <div className="flex flex-col items-center gap-3 flex-shrink-0">
+          <div className="relative w-24 h-24 md:w-32 md:h-32 rounded-3xl overflow-hidden bg-brand-brown-100 border-2 border-brand-teal-500/20 shadow-sm group">
+            <img
+              src={userProfile?.image || "https://tse1.explicit.bing.net/th/id/OIP.nNcZCmS6bYcpZXN7AimcNwHaGI?r=0&rs=1&pid=ImgDetMain&o=7&rm=3"}
+              alt="Profile Avatar"
+              className="w-full h-full object-cover"
+            />
+            {/* Overlay */}
+            <div 
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white text-xs font-bold cursor-pointer gap-1"
+            >
+              <FiUpload className="text-base" />
+              <span>Change Photo</span>
+            </div>
+            <input
+              type="file"
+              ref={fileInputRef}
+              className="hidden"
+              accept="image/*"
+              onChange={handleImageFileChange}
+            />
+          </div>
+          
+          {/* Photo Actions */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadImageMutation.isPending}
+              className="px-2.5 py-1.5 rounded-lg bg-brand-teal-50 hover:bg-brand-teal-100 dark:bg-brand-teal-950/20 dark:hover:bg-brand-teal-950/40 text-[10px] font-extrabold text-brand-teal-600 dark:text-brand-teal-400 uppercase tracking-wider cursor-pointer flex items-center gap-1 transition-all"
+            >
+              <FiUpload /> Change
+            </button>
+            {userProfile?.image && userProfile.image !== "https://tse1.explicit.bing.net/th/id/OIP.nNcZCmS6bYcpZXN7AimcNwHaGI?r=0&rs=1&pid=ImgDetMain&o=7&rm=3" && (
+              <button
+                onClick={handleDeletePhotoClick}
+                disabled={deleteImageMutation.isPending}
+                className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 dark:bg-red-950/20 dark:hover:bg-red-950/40 text-[10px] font-extrabold text-red-600 dark:text-red-400 uppercase tracking-wider cursor-pointer flex items-center gap-1 transition-all"
+              >
+                <FiTrash2 /> Remove
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Info Grid / Edit Form Toggle */}
@@ -182,23 +287,6 @@ export default function ProfilePage() {
                       className="w-full bg-brand-brown-100/40 hover:bg-brand-brown-100 dark:bg-brand-brown-900/20 pl-10 pr-4 py-2 rounded-xl border border-transparent focus:border-brand-teal-500 focus:bg-background outline-none text-xs transition-all font-semibold"
                     />
                   </div>
-                </div>
-
-                {/* Avatar Image URL */}
-                <div className="relative">
-                  <label className="text-[10px] font-bold text-brand-brown-400 mb-1 block uppercase tracking-wider">
-                    Avatar Image URL
-                  </label>
-                  <div className="absolute inset-y-8 left-3.5 flex items-center pointer-events-none text-brand-brown-400">
-                    <FiImage />
-                  </div>
-                  <input
-                    type="url"
-                    value={image}
-                    onChange={(e) => setImage(e.target.value)}
-                    placeholder="https://example.com/avatar.jpg"
-                    className="w-full bg-brand-brown-100/40 hover:bg-brand-brown-100 dark:bg-brand-brown-900/20 pl-10 pr-4 py-2 rounded-xl border border-transparent focus:border-brand-teal-500 focus:bg-background outline-none text-xs transition-all font-semibold"
-                  />
                 </div>
 
                 <button

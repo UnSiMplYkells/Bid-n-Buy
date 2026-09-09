@@ -1,5 +1,16 @@
 const mongoose = require("mongoose")
 
+//for multiple images, minimum 5.
+// images: {
+//   type: [String], // Changes from String to an array of Strings
+//   validate: {
+//     validator: function (v) {
+//       return v && v.length >= 5; // Enforces minimum of 5 at the DB level
+//     },
+//     message: "An auction must have at least 5 images."
+//   }
+// }
+
 const AuctionSchema = new mongoose.Schema(
   {
     image: {
