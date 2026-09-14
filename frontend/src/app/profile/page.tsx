@@ -6,7 +6,8 @@ import { useAuthStore } from "../../store/useAuthStore";
 import { axiosClient } from "../../utils/axios";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
-import { FiUser, FiMail, FiPhone, FiSettings, FiGrid, FiAward, FiDollarSign, FiTrash2, FiUpload } from "react-icons/fi";
+import { FiUser, FiMail, FiPhone, FiSettings, FiGrid, FiAward, FiDollarSign, FiTrash2, FiUpload, FiCheckCircle, FiXCircle } from "react-icons/fi";
+import ResendVerificationButton from "../../components/ResendVerificationButton";
 import toast from "react-hot-toast";
 
 interface BidOnAuction {
@@ -230,10 +231,26 @@ export default function ProfilePage() {
         <div className="flex-1 w-full space-y-4">
           <div className="flex justify-between items-center border-b border-brand-brown-200/10 pb-3">
             <div>
-              <h1 className="text-xl md:text-2xl font-bold text-brand-brown-800 dark:text-brand-brown-200">
-                {userProfile?.username || "JohnDoe"}
-              </h1>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl md:text-2xl font-bold text-brand-brown-800 dark:text-brand-brown-200">
+                  {userProfile?.username || "JohnDoe"}
+                </h1>
+                {userProfile?.isVerified ? (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/20 text-[10px] font-extrabold text-emerald-600 dark:text-emerald-400 border border-emerald-200/20 shadow-sm">
+                    <FiCheckCircle className="text-xs" /> Verified
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/20 text-[10px] font-extrabold text-amber-600 dark:text-amber-400 border border-amber-200/20 shadow-sm">
+                    <FiXCircle className="text-xs" /> Unverified
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-brand-brown-400 font-semibold">{userProfile?.email}</p>
+              {!userProfile?.isVerified && (
+                <div className="mt-2">
+                  <ResendVerificationButton email={userProfile?.email || ""} className="px-2.5 py-1 text-[9px] rounded-lg shadow-sm" />
+                </div>
+              )}
             </div>
             <button
               onClick={() => setIsEditing(!isEditing)}
