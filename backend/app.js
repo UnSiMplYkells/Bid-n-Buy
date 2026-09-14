@@ -2,7 +2,7 @@ require("dotenv").config();
 require("express-async-errors");
 
 const connectDB = require("./db/connect");
-require("./services/endAuction");
+require("./utils/endAuctionCron");
 
 const express = require("express");
 const socketIO = require("socket.io");
